@@ -90,13 +90,13 @@ if not eventData.targetNetId == nil then
     end
 end
   if eventData.expiration == false then
-      LogBan(eventData.author,eventData.targetName,eventData.reason,"PERMANENT",eventData.actionId,"Steam ID: "..steamid.."\nLicense: "..license.."\nDiscord: "..discord.."\nIP Address: "..ip)
+      LogBan(eventData.author,eventData.targetName,eventData.reason,wx.Locale.Permanent,eventData.actionId,"Steam ID: "..steamid.."\nLicense: "..license.."\nDiscord: "..discord.."\nIP Address: "..ip)
   else
       LogBan(eventData.author,eventData.targetName,eventData.reason,os.date('%d.%m.%Y %H:%M:%S', eventData.expiration),eventData.actionId,"Steam ID: "..steamid.."\nLicense: "..license.."\nDiscord: "..discord.."\nIP Address: "..ip)
   end
 else
   if eventData.expiration == false then
-    LogBan(eventData.author,eventData.targetName,eventData.reason,"PERMANENT",eventData.actionId,"Identifiers are unavailable, the player was banned while offline")
+    LogBan(eventData.author,eventData.targetName,eventData.reason,wx.Locale.Permanent,eventData.actionId,"Identifiers are unavailable, the player was banned while offline")
 else
     LogBan(eventData.author,eventData.targetName,eventData.reason,os.date('%d.%m.%Y %H:%M:%S', eventData.expiration),eventData.actionId,"Identifiers are unavailable, the player was banned while offline")
 end
