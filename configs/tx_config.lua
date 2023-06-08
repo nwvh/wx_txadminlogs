@@ -16,6 +16,7 @@ wx.Announcement = 8421504 -- integer value - Use https://www.spycolor.com/
 wx.Restart = 16776960 -- integer value - Use https://www.spycolor.com/
 wx.DM = 13938487 -- integer value - Use https://www.spycolor.com/
 wx.Revoked = 255 -- integer value - Use https://www.spycolor.com/
+wx.Whitelist = 255 -- integer value - Use https://www.spycolor.com/
 
 -- [ Locale Settings ]
 
@@ -30,6 +31,7 @@ wx.Locale = {
     Banned = "❌ Player has been banned",
     Heal = "🏥 Admin Heal",
     Announcement = "🔔 New server announcement",
+    Whitelist = "📃 Whitelist Updated",
 
     -- Fields
     Permanent = "PERMANENT",
@@ -44,10 +46,10 @@ wx.Locale = {
     Announcer = "Announcer",
     Message = "Message",
     Type = "Action Type",
+    License = "Player License",
 
     -- Other
-    NotFound = "Not Found" -- When identifier is not found
+    NotFound = "Not Found", -- When identifier is not found
+    Ban = "Ban",
+    Warn = "Warning"
 }
-
-
-

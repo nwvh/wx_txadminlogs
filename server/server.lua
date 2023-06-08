@@ -29,7 +29,7 @@ AddEventHandler('txAdmin:events:scheduledRestart', function(eventData)
         LogRestart('2')
     elseif eventData.secondsRemaining == 60 then
         LogRestart('1')
-    elseif eventData.secondsRemaining <= 5 then
+    elseif eventData.secondsRemaining < 10 then
         LogRestart(wx.Locale.RestartingNow)
     end
 end)
@@ -43,7 +43,11 @@ end)
 -- [ Revoke logs ]
 
 AddEventHandler('txAdmin:events:actionRevoked', function(eventData)
-  LogRevoke(eventData.revokedBy,eventData.actionId,eventData.actionType)
+  local action = "Unknown"
+  if eventData.actionType == 'ban' then action = wx.Locale.Ban
+  elseif eventData.actionType == 'warn' then action = wx.Locale.Warn
+  end
+  LogRevoke(eventData.revokedBy,eventData.actionId,action)
 end)
 
 -- [ Kick logs ]
@@ -77,31 +81,11 @@ AddEventHandler('txAdmin:events:playerBanned', function(eventData)
   local discord  = wx.Locale.NotFound
   local ip       = wx.Locale.NotFound
 
-if not eventData.targetNetId == nil then
-  for k,v in pairs(GetPlayerIdentifiers(eventData.targetNetId)) do
-    if string.sub(v, 1, string.len("steam:")) == "steam:" then
-      steamid = v
-    elseif string.sub(v, 1, string.len("license:")) == "license:" then
-      license = v
-    elseif string.sub(v, 1, string.len("ip:")) == "ip:" then
-      ip = v:gsub('ip:', '')
-    elseif string.sub(v, 1, string.len("discord:")) == "discord:" then
-      discord = v
-    end
-end
   if eventData.expiration == false then
-      LogBan(eventData.author,eventData.targetName,eventData.reason,wx.Locale.Permanent,eventData.actionId,"Steam ID: "..steamid.."\nLicense: "..license.."\nDiscord: "..discord.."\nIP Address: "..ip)
+      LogBan(eventData.author,eventData.targetName,eventData.reason,wx.Locale.Permanent,eventData.actionId)
   else
-      LogBan(eventData.author,eventData.targetName,eventData.reason,os.date('%d.%m.%Y %H:%M:%S', eventData.expiration),eventData.actionId,"Steam ID: "..steamid.."\nLicense: "..license.."\nDiscord: "..discord.."\nIP Address: "..ip)
+      LogBan(eventData.author,eventData.targetName,eventData.reason,os.date('%d.%m.%Y %H:%M:%S', eventData.expiration),eventData.actionId)
   end
-else
-  if eventData.expiration == false then
-    LogBan(eventData.author,eventData.targetName,eventData.reason,wx.Locale.Permanent,eventData.actionId,"Identifiers are unavailable, the player was banned while offline")
-else
-    LogBan(eventData.author,eventData.targetName,eventData.reason,os.date('%d.%m.%Y %H:%M:%S', eventData.expiration),eventData.actionId,"Identifiers are unavailable, the player was banned while offline")
-end
-  
-end
 
 end)
 
@@ -144,6 +128,15 @@ AddEventHandler('txAdmin:events:announcement', function(eventData)
     LogAnnouncement(eventData.author,eventData.message)
 end)
 
+-- [ Whitelist logs ]
+AddEventHandler('txAdmin:events:whitelistPlayer', function(eventData)
+  local action = "Unknown"
+  if eventData.action == "added" then action = "Whitelist Added"
+  elseif eventData.action == "removed" then action = "Whitelist Removed"
+  end
+  LogWL(eventData.adminName,eventData.playerName,eventData.license,action)
+end)
+
 
 -- [ Webhook functions ]
 
@@ -158,6 +151,37 @@ function LogRestart(time)
               ["value"]= time,
               ["inline"] = true
             }
+          }
+        }
+      }
+    PerformHttpRequest(wx.Webhook, function(err, text, headers) end, 'POST', json.encode({username = wx.WebhookUsername, avatar_url = wx.WebhookAvatar, embeds = embed}), { ['Content-Type'] = 'application/json' })
+end
+function LogWL(admin,player,license,action)
+    local embed = {
+          {
+              ["color"] = wx.Whitelist,
+              ["title"] = "**"..wx.Locale.Whitelist.."**",
+          ["fields"] = {
+            {
+              ["name"]= wx.Locale.AdminName,
+              ["value"]= admin,
+              ["inline"] = true
+            },
+            {
+              ["name"]= wx.Locale.Target,
+              ["value"]= player,
+              ["inline"] = true
+            },
+            {
+              ["name"]= wx.Locale.License,
+              ["value"]= license,
+              ["inline"] = true
+            },
+            {
+              ["name"]= wx.Locale.ActionType,
+              ["value"]= action,
+              ["inline"] = true
+            },
           }
         }
       }
@@ -228,7 +252,7 @@ function LogWarning(admin, player, reason, ids)
     PerformHttpRequest(wx.Webhook, function(err, text, headers) end, 'POST', json.encode({username = wx.WebhookUsername, avatar_url = wx.WebhookAvatar, embeds = embed}), { ['Content-Type'] = 'application/json' })
 end
 
-function LogBan(admin, player, reason, expires, banid, ids)
+function LogBan(admin, player, reason, expires, banid)
     local embed = {
           {
               ["color"] = wx.Ban,
@@ -257,11 +281,6 @@ function LogBan(admin, player, reason, expires, banid, ids)
             {
               ["name"]= wx.Locale.BanID,
               ["value"]= banid,
-              ["inline"] = true
-            },
-            {
-              ["name"]= wx.Locale.Ids,
-              ["value"]= ids,
               ["inline"] = true
             }
           }
@@ -365,38 +384,4 @@ function LogDM(admin,player, message)
         }
       }
     PerformHttpRequest(wx.Webhook, function(err, text, headers) end, 'POST', json.encode({username = wx.WebhookUsername, avatar_url = wx.WebhookAvatar, embeds = embed}), { ['Content-Type'] = 'application/json' })
-end
-
-
-function ExtractIdentifiers(src)
-  local identifiers = {
-      steam = "",
-      ip = "",
-      discord = "",
-      license = "",
-      xbl = "",
-      live = ""
-  }
-
-  --Loop over all identifiers
-  for i = 0, GetNumPlayerIdentifiers(src) - 1 do
-      local id = GetPlayerIdentifier(src, i)
-
-      --Convert it to a nice table.
-      if string.find(id, "steam") then
-          identifiers.steam = id
-      elseif string.find(id, "ip") then
-          identifiers.ip = id
-      elseif string.find(id, "discord") then
-          identifiers.discord = id
-      elseif string.find(id, "license") then
-          identifiers.license = id
-      elseif string.find(id, "xbl") then
-          identifiers.xbl = id
-      elseif string.find(id, "live") then
-          identifiers.live = id
-      end
-  end
-
-  return identifiers
 end
